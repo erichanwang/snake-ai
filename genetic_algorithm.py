@@ -20,7 +20,8 @@ class geneticalgorithm:
             game=snakegame()
             state=game.reset()
             steps=0
-            while True:
+            max_steps=1000  #limit steps to prevent infinite loops
+            while steps<max_steps:
                 action=agent.get_action(state)
                 state,alive,score=game.step(action)
                 steps+=1
@@ -28,6 +29,7 @@ class geneticalgorithm:
                     break
             #fitness=score*10000+survival bonus
             agent.fitness=score*10000+steps
+
 
 
     

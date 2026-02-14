@@ -1,9 +1,11 @@
 import numpy as np
 
 class neuralnetwork:
-    def __init__(self, input_size=6, hidden_size=16, output_size=4):
-        #input: head_x, head_y, tail_x, tail_y, apple_x, apple_y
+    def __init__(self, input_size=7, hidden_size=16, output_size=4):
+        #input: head_x, head_y, tail_x, tail_y, apple_x, apple_y, direction
+        #direction: 0=up(-y), 1=down(+y), 2=left(-x), 3=right(+x)
         #output: up, down, left, right
+
         self.input_size=input_size
         self.hidden_size=hidden_size
         self.output_size=output_size

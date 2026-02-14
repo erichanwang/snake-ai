@@ -4,10 +4,67 @@ import signal
 import sys
 import threading
 import time
+import os
 from neural_network import neuralnetwork
 from agent import snakeagent
 from snake_game import snakegame
 from genetic_algorithm import geneticalgorithm
+
+def load_weights(filename="trained_weights.txt"):
+    """load weights from file if exists"""
+    if not os.path.exists(filename):
+        print(f"no existing weights found at {filename}, starting fresh")
+        return None
+    brain=neuralnetwork(input_size=7)  #7 inputs now
+    with open(filename,"r") as f:
+        lines=f.readlines()
+    #check if old format (6 inputs) or new format (7 inputs)
+    #new format has 7 rows for w1, old has 6
+    is_new_format = len(lines) > 28  #new has more lines
+    if is_new_format:
+        #parse w1:7lines (new format)
+        idx=1
+        w1=[]
+        for i in range(7):
+            w1.append(list(map(float,lines[idx+i].strip().split(","))))
+        brain.w1=np.array(w1)
+        #parse b1:1line
+        idx=9
+        brain.b1=np.array([list(map(float,lines[idx].strip().split(",")))])
+        #parse w2:16lines
+        idx=11
+        w2=[]
+        for i in range(16):
+            w2.append(list(map(float,lines[idx+i].strip().split(","))))
+        brain.w2=np.array(w2)
+        #parse b2:1line
+        idx=28
+        brain.b2=np.array([list(map(float,lines[idx].strip().split(",")))])
+        print(f"loaded new format weights (7 inputs) from {filename}")
+    else:
+        #old format - 6 inputs, need to pad to 7
+        idx=1
+        w1=[]
+        for i in range(6):
+            w1.append(list(map(float,lines[idx+i].strip().split(","))))
+        #pad with zeros for 7th input
+        w1.append([0.0]*16)
+        brain.w1=np.array(w1)
+        #parse b1:1line
+        idx=8
+        brain.b1=np.array([list(map(float,lines[idx].strip().split(",")))])
+        #parse w2:16lines
+        idx=10
+        w2=[]
+        for i in range(16):
+            w2.append(list(map(float,lines[idx+i].strip().split(","))))
+        brain.w2=np.array(w2)
+        #parse b2:1line
+        idx=27
+        brain.b2=np.array([list(map(float,lines[idx].strip().split(",")))])
+        print(f"loaded old format weights (6 inputs, padded to 7) from {filename}")
+    return brain
+
 
 class VisualTrainer:
     def __init__(self, pop_size=50):
@@ -28,6 +85,23 @@ class VisualTrainer:
         self.game_area = pygame.Rect(50, 50, 450, 450)  #30x30 * 15px = 450px
         self.stats_area = pygame.Rect(520, 50, 300, 450)
         self.nn_area = pygame.Rect(830, 50, 320, 450)  #neural network visualization
+        
+        #load existing weights if available
+        self.load_existing_weights()
+        
+    def load_existing_weights(self):
+        """seed population with existing weights if available"""
+        existing_brain = load_weights("trained_weights.txt")
+        if existing_brain is not None:
+            print("seeding population with existing weights...")
+            #replace first agent with loaded weights
+            self.ga.population[0] = snakeagent(existing_brain)
+            #create variations for next 10 agents
+            for i in range(1, min(11, self.ga.pop_size)):
+                mutated_brain = existing_brain.copy()
+                mutated_brain.mutate(rate=0.05)
+                self.ga.population[i] = snakeagent(mutated_brain)
+            print(f"seeded {min(11, self.ga.pop_size)} agents with existing weights")
         
     def train_generation(self):
         """Train one generation"""
@@ -68,8 +142,9 @@ class VisualTrainer:
         #clear nn area
         pygame.draw.rect(self.screen, (25, 25, 25), self.nn_area)
         
-        #nn architecture: 6 inputs -> 16 hidden -> 4 outputs
-        input_nodes = 6
+        #nn architecture: 7 inputs -> 16 hidden -> 4 outputs
+        input_nodes = 7
+
         hidden_nodes = 16
         output_nodes = 4
         
@@ -104,7 +179,8 @@ class VisualTrainer:
         
         #draw nodes
         #input nodes
-        labels = ["head_x", "head_y", "tail_x", "tail_y", "apple_x", "apple_y"]
+        labels = ["head_x", "head_y", "tail_x", "tail_y", "apple_x", "apple_y", "direction"]
+
         for i, (y, label) in enumerate(zip(input_ys, labels)):
             pygame.draw.circle(self.screen, (0, 150, 255), (left_x, int(y)), 8)
             text = self.font.render(label, True, (200, 200, 200))
@@ -144,7 +220,6 @@ class VisualTrainer:
                 score_text = self.font.render(f"Best Score: {self.ga.best.fitness // 10000}", True, (200, 200, 200))
                 self.screen.blit(score_text, (self.stats_area.x + 20, self.stats_area.y + 100))
                 snake_len = self.font.render(f"Snake Length: {self.ga.best.fitness // 10000 + 1}", True, (200, 200, 200))
-
                 self.screen.blit(snake_len, (self.stats_area.x + 20, self.stats_area.y + 125))
             #draw fitness graph
             if len(self.best_fitness_history) > 1:
