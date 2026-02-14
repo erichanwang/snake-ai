@@ -23,34 +23,60 @@ def load_weights(filename="trained_weights.txt"):
     brain=neuralnetwork()
     with open(filename,"r") as f:
         lines=f.readlines()
-    #parse w1 (6 lines after "w1:")
+    #parse w1:6lines
     idx=1
     w1=[]
     for i in range(6):
         w1.append(list(map(float,lines[idx+i].strip().split(","))))
     brain.w1=np.array(w1)
-    #parse b1 (1 line after "b1:")
+    #parse b1:1line
     idx=8
     brain.b1=np.array([list(map(float,lines[idx].strip().split(",")))])
-    #parse w2 (16 lines after "w2:")
+    #parse w2:16lines
     idx=10
     w2=[]
     for i in range(16):
         w2.append(list(map(float,lines[idx+i].strip().split(","))))
     brain.w2=np.array(w2)
-    #parse b2 (1 line after "b2:")
+    #parse b2:1line
     idx=27
     brain.b2=np.array([list(map(float,lines[idx].strip().split(",")))])
+
     print(f"weights loaded from {filename}")
     return brain
 
 
 def train():
+    import signal
+    import sys
+    
     ga=geneticalgorithm(pop_size=50)
-    for gen in range(100):
-        ga.evolve()
-        print(f"gen {gen}: best fitness={ga.best.fitness}")
-        save_weights(ga.best.brain,"trained_weights.txt")
+    
+    def signal_handler(sig,frame):
+        print("\nInterrupt received! Saving weights...")
+        ga.save_weights("trained_weights.txt")
+        sys.exit(0)
+    
+    signal.signal(signal.SIGINT,signal_handler)
+    signal.signal(signal.SIGTERM,signal_handler)
+    
+    #start continuous training
+    print("training... (ctrl+c to stop)")
+    print("auto-save enabled")
+
+    
+    try:
+        while True:
+            ga.evolve()
+            print(f"gen {ga.generation}: best fitness={ga.best.fitness}")
+            ga.save_weights("trained_weights.txt")
+    except KeyboardInterrupt:
+        #user stopped training
+        print("\nstopped.")
+        ga.save_weights("trained_weights.txt")
+        print("saved.")
+
+
 
 
 
