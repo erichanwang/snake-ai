@@ -41,30 +41,22 @@ def load_weights(filename="trained_weights.txt"):
     #parse b2:1line
     idx=27
     brain.b2=np.array([list(map(float,lines[idx].strip().split(",")))])
-
     print(f"weights loaded from {filename}")
     return brain
-
 
 def train():
     import signal
     import sys
-    
     ga=geneticalgorithm(pop_size=50)
-    
     def signal_handler(sig,frame):
         print("\nInterrupt received! Saving weights...")
         ga.save_weights("trained_weights.txt")
         sys.exit(0)
-    
     signal.signal(signal.SIGINT,signal_handler)
     signal.signal(signal.SIGTERM,signal_handler)
-    
     #start continuous training
     print("training... (ctrl+c to stop)")
     print("auto-save enabled")
-
-    
     try:
         while True:
             ga.evolve()
@@ -76,40 +68,31 @@ def train():
         ga.save_weights("trained_weights.txt")
         print("saved.")
 
-
-
-
-
-
 def play_best():
     pygame.init()
-    screen=pygame.display.set_mode((400,400))
+    #bigger window for 30x30 grid (450x450) + some padding
+    screen=pygame.display.set_mode((500,500))
     pygame.display.set_caption("ai snake")
-    
-    brain=neuralnetwork()
+    brain=load_weights("trained_weights.txt")
     agent=snakeagent(brain)
     game=snakegame()
-
     state=game.reset()
-    
     clock=pygame.time.Clock()
     running=True
-    
     while running:
         for event in pygame.event.get():
             if event.type==pygame.QUIT:
                 running=False
-        
         action=agent.get_action(state)
         state,alive,score=game.step(action)
-        game.render(screen)
+        #center the game in the window
+        screen.fill((0,0,0))
+        game.render(screen,25,25)
         pygame.display.flip()
         clock.tick(10)
-        
         if not alive:
             print(f"game over! score: {score}")
             state=game.reset()
-    
     pygame.quit()
 
 if __name__=="__main__":

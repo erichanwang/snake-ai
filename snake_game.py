@@ -3,10 +3,10 @@ import random
 
 class snakegame:
 
-    def __init__(self,width=20,height=20):
+    def __init__(self,width=30,height=30):
         self.width=width
         self.height=height
-        self.block_size=20
+        self.block_size=15
         self.reset()
     
     def reset(self):
@@ -46,7 +46,7 @@ class snakegame:
         head=self.snake[0]
         new_head=(head[0]+self.direction[0],head[1]+self.direction[1])
         
-        #wall collision
+        #wall collision - die if hits wall
         if new_head[0]<0 or new_head[0]>=self.width or new_head[1]<0 or new_head[1]>=self.height:
             return self.get_state(),False,self.score
         
@@ -56,10 +56,11 @@ class snakegame:
         
         self.snake.insert(0,new_head)
         
-        #eat apple
+        #eat apple - elongate by 1 (don't pop tail)
         if new_head==self.apple:
             self.score+=1
             self.place_apple()
+            #snake grows by 1, no pop()
         else:
             self.snake.pop()
         
@@ -77,15 +78,23 @@ class snakegame:
             return True
         return False
     
-    def render(self,screen):
-        screen.fill((0,0,0))
+    def render(self,screen,offset_x=0,offset_y=0):
+        #draw grid background
+        for x in range(self.width+1):
+            pygame.draw.line(screen,(40,40,40),
+                           (offset_x+x*self.block_size,offset_y),
+                           (offset_x+x*self.block_size,offset_y+self.height*self.block_size))
+        for y in range(self.height+1):
+            pygame.draw.line(screen,(40,40,40),
+                           (offset_x,offset_y+y*self.block_size),
+                           (offset_x+self.width*self.block_size,offset_y+y*self.block_size))
         #draw snake
         for i,segment in enumerate(self.snake):
             color=(0,255,0) if i==0 else (0,200,0)
-            pygame.draw.rect(screen,color,(segment[0]*self.block_size,segment[1]*self.block_size,self.block_size-2,self.block_size-2))
+            pygame.draw.rect(screen,color,(offset_x+segment[0]*self.block_size,offset_y+segment[1]*self.block_size,self.block_size-2,self.block_size-2))
         #draw apple
-        pygame.draw.rect(screen,(255,0,0),(self.apple[0]*self.block_size,self.apple[1]*self.block_size,self.block_size-2,self.block_size-2))
+        pygame.draw.rect(screen,(255,0,0),(offset_x+self.apple[0]*self.block_size,offset_y+self.apple[1]*self.block_size,self.block_size-2,self.block_size-2))
         #draw score
         font=pygame.font.Font(None,36)
         text=font.render(f"score:{self.score}",True,(255,255,255))
-        screen.blit(text,(10,10))
+        screen.blit(text,(offset_x+10,offset_y+10))
