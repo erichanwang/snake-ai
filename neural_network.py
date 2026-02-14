@@ -8,11 +8,12 @@ class neuralnetwork:
         self.hidden_size=hidden_size
         self.output_size=output_size
         
-        #weights
-        self.w1=np.random.randn(input_size,hidden_size)
+        #weights - smaller init for better stability
+        self.w1=np.random.randn(input_size,hidden_size)*0.1
         self.b1=np.zeros((1,hidden_size))
-        self.w2=np.random.randn(hidden_size,output_size)
+        self.w2=np.random.randn(hidden_size,output_size)*0.1
         self.b2=np.zeros((1,output_size))
+
     
     def sigmoid(self,x):
         return 1/(1+np.exp(-np.clip(x,-500,500)))

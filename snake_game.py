@@ -1,7 +1,8 @@
 import pygame
 import random
 
-class sn create the snake game module.akegame:
+class snakegame:
+
     def __init__(self,width=20,height=20):
         self.width=width
         self.height=height
