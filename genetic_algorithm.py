@@ -80,4 +80,9 @@ class geneticalgorithm:
                 f.write(",".join(map(str,row))+"\n")
             f.write("b2:\n")
             f.write(",".join(map(str,brain.b2[0]))+"\n")
+            f.write("w3:\n")
+            for row in brain.w3:
+                f.write(",".join(map(str,row))+"\n")
+            f.write("b3:\n")
+            f.write(",".join(map(str,brain.b3[0]))+"\n")
         print(f"Generation {self.generation}: weights saved to {filename} (fitness={self.best.fitness})")

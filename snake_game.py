@@ -1,6 +1,7 @@
 import pygame
 import random
 import time
+import math
 
 class snakegame:
 
@@ -49,10 +50,26 @@ class snakegame:
         return 0
     
     def get_state(self):
-        #input: head_x, head_y, tail_x, tail_y, apple_x, apple_y, direction
+        #input: head_x, head_y, tail_x, tail_y, apple_x, apple_y, direction,
+        #        dist_left, dist_right, dist_top, dist_bottom, apple_dx, apple_dy, apple_distance
         head=self.snake[0]
         tail=self.snake[-1] if len(self.snake)>1 else head
         direction_code=self.get_direction_code()
+        
+        #distance to walls (negative when close - danger signal)
+        dist_left=-head[0]  #0 at left wall, more negative further right
+        dist_right=-(self.width-1-head[0])  #0 at right wall
+        dist_top=-head[1]  #0 at top wall
+        dist_bottom=-(self.height-1-head[1])  #0 at bottom wall
+        
+        #signed distance to apple (positive = apple is in that direction)
+        apple_dx=self.apple[0]-head[0]  #positive if apple to the right
+        apple_dy=self.apple[1]-head[1]  #positive if apple below
+        
+        #Euclidean distance to apple (normalized)
+        apple_distance=math.sqrt(apple_dx**2+apple_dy**2)
+        max_dist=math.sqrt(self.width**2+self.height**2)
+        
         return (
             head[0]/self.width,
             head[1]/self.height,
@@ -60,8 +77,16 @@ class snakegame:
             tail[1]/self.height,
             self.apple[0]/self.width,
             self.apple[1]/self.height,
-            direction_code/3.0  #normalize to 0-1
+            direction_code/3.0,  #normalize to 0-1
+            dist_left/self.width,  #negative near left wall
+            dist_right/self.width,  #negative near right wall
+            dist_top/self.height,  #negative near top wall
+            dist_bottom/self.height,  #negative near bottom wall
+            apple_dx/self.width,  #positive if apple right
+            apple_dy/self.height,  #positive if apple below
+            apple_distance/max_dist  #normalized Euclidean distance (0-1, smaller is closer)
         )
+
     
     def check_looping(self,pos):
         """check if snake is stuck visiting same positions"""
@@ -75,62 +100,31 @@ class snakegame:
         #check if visited too many times
         return len(self.position_history[pos])>self.loop_threshold
 
-    def check_edge_case(self,action):
-        """manually handle edge cases - force turn at corners only"""
-        head=self.snake[0]
-        x,y=head[0],head[1]
-        direction=self.get_direction_code()
-        
-        #only handle corners - let snake hit walls normally
-        #top right corner going up -> turn left
-        if x>=self.width-2 and y<=1 and direction==0:
-            return 2  #force left
-        #top right corner going right -> turn down
-        if x>=self.width-2 and y<=1 and direction==3:
-            return 1  #force down
-        #top left corner going up -> turn right
-        if x<=1 and y<=1 and direction==0:
-            return 3  #force right
-        #top left corner going left -> turn down
-        if x<=1 and y<=1 and direction==2:
-            return 1  #force down
-        #bottom right corner going down -> turn left
-        if x>=self.width-2 and y>=self.height-2 and direction==1:
-            return 2  #force left
-        #bottom right corner going right -> turn up
-        if x>=self.width-2 and y>=self.height-2 and direction==3:
-            return 0  #force up
-        #bottom left corner going down -> turn right
-        if x<=1 and y>=self.height-2 and direction==1:
-            return 3  #force right
-        #bottom left corner going left -> turn up
-        if x<=1 and y>=self.height-2 and direction==2:
-            return 0  #force up
-        
-        return action  #no edge case, use nn action
-
-
     def step(self,action):
-        #apply edge case handling
-        action=self.check_edge_case(action)
-        
         #action:0=up,1=down,2=left,3=right
         directions=[(0,-1),(0,1),(-1,0),(1,0)]
-        self.direction=directions[action]
+        new_direction=directions[action]
+        
+        #prevent 180-degree turns (can't reverse direction)
+        #if going up, can't go down; if going left, can't go right
+        if (self.direction[0]==-new_direction[0] and self.direction[1]==-new_direction[1]):
+            #invalid turn - keep current direction
+            new_direction=self.direction
+        
+        self.direction=new_direction
         
         head=self.snake[0]
         new_head=(head[0]+self.direction[0],head[1]+self.direction[1])
         
-        #only die on wall collision
+        #die on wall collision
         if new_head[0]<0 or new_head[0]>=self.width or new_head[1]<0 or new_head[1]>=self.height:
             return self.get_state(),False,self.score
         
-        #self collision - don't die, just don't move there
+        #die on self collision (fatal)
         if new_head in self.snake:
-            #stay in place, don't die
-            return self.get_state(),True,self.score
+            return self.get_state(),False,self.score
         
-        #check if snake is stuck looping - don't die, just track
+        #check if snake is stuck looping
         self.check_looping(new_head)
         
         self.snake.insert(0,new_head)
@@ -152,6 +146,9 @@ class snakegame:
     def is_game_over(self):
         head=self.snake[0]
         if head[0]<0 or head[0]>=self.width or head[1]<0 or head[1]>=self.height:
+            return True
+        #also check self collision
+        if head in self.snake[1:]:
             return True
         return False
     

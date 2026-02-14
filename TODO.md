@@ -1,53 +1,43 @@
-# Snake AI Training - Completed
+# Training Enhancement TODO - COMPLETED
 
-## Changes Made:
+## Summary of Changes
 
-### 1. snake_game.py
-- Grid size increased from 20x20 to 30x30
-- Block size reduced from 20px to 15px for better fit
-- Snake now dies when hitting walls (proper collision)
-- Snake elongates by 1 when eating apple (no tail pop on eat)
-- Added offset parameters to render() for flexible positioning
-- Grid lines drawn for better visibility
+### 1. neural_network.py
+- Added two hidden layers (16 neurons each) instead of one
+- Architecture: 14 inputs -> 16 hidden1 -> 16 hidden2 -> 4 outputs
+- Added w3/b3 weights for second hidden layer
+- Updated forward() to use two hidden layers with ReLU activation
+- Updated copy(), mutate(), and crossover() to handle new weights
 
-### 2. train.py (Visual Training)
-- Window size increased to 1200x600 for bigger game display
-- Game area: 450x450 pixels (30x30 grid * 15px)
-- Stats area: 300x450 with fitness graph
-- Neural network visualization area: 320x450
-- Shows all 6 input nodes, 16 hidden nodes, 4 output nodes
-- Connection lines between nodes (sampled for clarity)
-- Node labels: head_x/y, tail_x/y, apple_x/y for inputs, up/down/left/right for outputs
-- Real-time game visualization of best agent
-- Auto-saves after each generation
+### 2. snake_game.py
+- Added Euclidean distance to apple as 14th input feature
+- Fixed turn-around prevention (can't reverse direction 180°)
+- Made self-collision fatal (snake dies when hitting itself)
+- Removed edge case handling (let NN learn proper behavior)
 
-### 3. main.py
-- Updated play_best() for bigger 30x30 grid (500x500 window)
-- Loads trained weights before playing
-- Centers game in window with 25px padding
+### 3. genetic_algorithm.py
+- Added generation counter
+- Added save_weights() method to save best agent's weights
 
-### 4. README.md
-- Short casual explanation of the project
-- File descriptions
-- Usage instructions
+### 4. train.py
+- Created visual training interface with pygame
+- Shows live game, neural network visualization, and training stats
+- Loads existing weights and seeds population
+- Saves weights automatically after each generation
+- Supports manual save with 'S' key
+- Graceful shutdown with 'Q' key or Ctrl+C
 
-## How to Use:
+## Test Results
+- Turn-around prevention: WORKING
+- Self-collision death: WORKING
+- Apple eating: WORKING
+- Training generations: WORKING
+- Weight saving/loading: WORKING
 
-**Visual Training (with neural network display):**
+## Usage
 ```bash
+# Run visual training
 python train.py
-```
 
-**Headless Training (AFK):**
-```bash
+# Run headless training
 python main.py
-```
-
-**Play Trained AI:**
-```bash
-python main.py play
-```
-
-**Manual Play:**
-```bash
-python test_game.py
